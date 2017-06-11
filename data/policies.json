@@ -1,0 +1,16 @@
+{
+    "policies": {
+        "increase_food":{
+            "name": "increase_food",
+            "flat": [
+                {
+                    "value_name":"food",
+                    "amount":1.0
+                }
+            ]
+        },
+        "food_efficiency": {
+            "name": "food_efficiency"
+        }
+    }
+}

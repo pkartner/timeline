@@ -1,0 +1,23 @@
+{
+    "values" : {
+        "food": {
+            "name": "food"
+        },
+        "money": {
+            "name": "money",
+            "affected_by": [
+                {
+                    "name": "population",
+                    "weight": 1
+                }
+            ]
+        },
+        "energy": {
+            "name": "energy"
+        },
+        "population": {
+            "name": "population"
+
+        }
+    }
+}
