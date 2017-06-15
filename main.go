@@ -61,8 +61,9 @@ func GotoBranch() game.GuiEventHandler {
 		a := arguments.(*game.TimelineClicked)
 		now := uint64(time.Now().Unix())
 		lastID := game.Current.Dispatcher.Store.LastEvent.ID().IDPart()
-		game.Current.Dispatcher.Dispatch(event.Windback(a.Time, now, lastID+1))
 		game.Current.Dispatcher.Dispatch(game.SetBranch(a.Branch))
+		game.Current.Dispatcher.Dispatch(event.Windback(a.Time, now, lastID+1))
+
 	}
 }
 
@@ -81,7 +82,11 @@ func NewBranchHandler() game.GuiEventHandler {
 		currentTime := time.Now().Unix()
 		lastID := game.Current.Dispatcher.Store.LastEvent.ID().IDPart()
 		fmt.Println(fmt.Sprintf("Starting new branch at turn %d", branchStore.Turn))
-		game.Current.Dispatcher.Dispatch(event.NewBranch(branchStore.Turn, currentBranchID, lastEventID, uint64(currentTime), lastID+1))
+		newBranchEvent := event.NewBranch(branchStore.Turn, currentBranchID, lastEventID, uint64(currentTime), lastID+1)
+		fmt.Println(fmt.Sprintf("Prev branch id is: %s", currentBranchID.ToString()))
+		fmt.Println(fmt.Sprintf("New branch id is: %s", newBranchEvent.NewBranchID.ToString()))
+		fmt.Println(fmt.Sprintf("Currently we are rewinded: %t", gameStore.Rewind))
+		game.Current.Dispatcher.Dispatch(newBranchEvent)
 	}
 }
 
