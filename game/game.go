@@ -106,8 +106,10 @@ func CalculateAddedValue(key string, values ValueMap, weights WeightMap, policie
 func NewGame(fileName string, GameData *Data) {
 	databaseFileName := fileName+".db"
 	// Setup Event stuff
-	if err := os.Remove(databaseFileName); nil != err {
-	    panic(err)
+	if _, err := os.Stat(databaseFileName); !os.IsNotExist(err) {
+        if err := os.Remove(databaseFileName); nil != err {
+	    	panic(err)
+    	}
     }
     db, err := bolt.Open(databaseFileName, 0600, nil)
     if nil != err {
