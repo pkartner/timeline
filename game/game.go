@@ -105,7 +105,7 @@ func CalculateAddedValue(key string, values ValueMap, weights WeightMap, policie
 
 func NewGame(fileName string, GameData *Data) {
 	databaseFileName := fileName+".db"
-	// Setup Event stuff
+	//Setup Event stuff
 	if _, err := os.Stat(databaseFileName); !os.IsNotExist(err) {
         if err := os.Remove(databaseFileName); nil != err {
 	    	panic(err)
@@ -139,6 +139,14 @@ func NewGame(fileName string, GameData *Data) {
 
 	dispatcher.Register(&NextTurnEvent{}, Current.NextTurnHandler)
     dispatcher.Register(&SetPolicyEvent{}, Current.SetPolicyHandler)
+	eventStore.PrintAllEvents()
+	eventStore.Restore(^uint64(0),func(e event.Event) error {
+		fmt.Println(fmt.Sprintf("Loading back event with time %d and type %s", e.Time(), e.Type()))
+		if err := dispatcher.Handle(e); nil != err {
+			panic(err)
+		}
+		return nil
+	})
 	
 }
 
@@ -176,17 +184,6 @@ func (g *Instance) GetCurrentBranchStore() *BranchStore{
 }
 
 func (g *Instance) GetRewindedBranchStore() *BranchStore{
-	// timeStore := g.GetTimeLineStore()
-	// gameStore := g.GetGameStore()
-	// branch, err := timeStore.GetBranch(gameStore.CurrentBranch)
-	// if nil != err {
-	// 	panic(err)
-	// }
-	// storeID := branch.StoreID
-	// branchStore := timeStore.Stores[storeID]
-	// if gameStore.Rewind {
-	// 	branchStore = timeStore.RewindStores[storeID]
-	// }
 	branchStore := g.GetRewindedStore()
 	returnStore, ok := branchStore.Attributes.(*BranchStore)
 	if !ok {

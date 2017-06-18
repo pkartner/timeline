@@ -59,10 +59,9 @@ func EndturnHandler() game.GuiEventHandler {
 func GotoBranch() game.GuiEventHandler {
 	return func(arguments interface{}) {
 		a := arguments.(*game.TimelineClicked)
-		now := uint64(time.Now().Unix())
-		lastID := game.Current.Dispatcher.Store.LastEvent.ID().IDPart()
 		game.Current.Dispatcher.Dispatch(game.SetBranch(a.Branch))
-		game.Current.Dispatcher.Dispatch(event.Windback(a.Time, now, lastID+1))
+		lastID := game.Current.Dispatcher.Store.LastEvent.ID().IDPart()
+		game.Current.Dispatcher.Dispatch(event.Windback(a.Time, uint64(time.Now().Unix()), lastID+1))
 
 	}
 }
@@ -206,7 +205,7 @@ func run() {
 		"policies": &policyScreen,
 		"timeline": &timelineScreen,
 	}
-	game.Current.Dispatcher.Dispatch(event.NewBranch(^uint64(0), event.ZeroID(), event.ZeroID(), uint64(time.Now().Unix()), 0))
+	game.Current.Dispatcher.Dispatch(event.NewBranch(0, event.ZeroID(), event.ZeroID(), uint64(time.Now().Unix()), 0))
 	branchID := game.Current.GetTimeLineStore().Branches[0].BranchID
 	game.Current.Dispatcher.Dispatch(game.SetBranch(branchID))
 	game.Current.Dispatcher.Dispatch(game.SetScreen("policies"))
