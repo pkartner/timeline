@@ -72,7 +72,7 @@ func (g *Instance) WindbackHandler(e event.Event, s *event.Store) {
 	store := GetGameStore(s)
 	store.Rewind = false
 	if !SameTime(timeStore) {
-		//fmt.Println(fmt.Sprintf("Setting rewind to true"))
+		fmt.Println(fmt.Sprintf("Setting rewind to true"))
 		store.Rewind = true
 	}
 }
@@ -85,7 +85,7 @@ func SameTime(store *event.TimelineStore) bool {
 	
 	branchIndex, ok := store.BranchDictionary[gameStore.CurrentBranch]
 	if !ok {
-		panic("Unknown branch requested")
+		panic(fmt.Errorf("Unknown branch requested: %s", gameStore.CurrentBranch.ToString()))
 	}
 	branch := store.Branches[branchIndex]
 

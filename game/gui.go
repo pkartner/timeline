@@ -396,7 +396,7 @@ func (g *GuiTimeLine) Draw(tar pixel.Target, vec pixel.Vec) {
 	for k, v := range timelineStore.Branches {
 		starttime := uint64(0)
 		if v.PrevBranchLastEvent != event.ZeroID() {
-			starttime = v.PrevBranchLastEvent.TimePart()+1
+			starttime = v.CreationTime
 		}
 		y := -20 * float64(k)
 		nodeStartPos := pixel.V(18, -20)
@@ -432,7 +432,7 @@ func (g *GuiTimeLine) CheckMouse(key string, mousePosition pixel.Vec) bool {
 	for k, v := range timelineStore.Branches {
 		starttime := uint64(0)
 		if v.PrevBranchLastEvent != event.ZeroID() {
-			starttime = v.PrevBranchLastEvent.TimePart()+1
+			starttime = v.CreationTime
 		}
 		y := -20 * float64(k)
 		nodeStartPos := pixel.V(18, -20)

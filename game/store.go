@@ -41,8 +41,6 @@ func NewBranchStoreFunc(values ValueMap) func() event.BranchStore {
 	}
 }
 
-
-
 func GetBranchStore(s *event.Store) *BranchStore {
     store, ok := s.Attributes.(*BranchStore)
     if !ok {
