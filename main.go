@@ -13,8 +13,6 @@ import (
 
 	"github.com/pkartner/event"
 	"github.com/pkartner/timeline/game"
-	
-	//"github.com/faiface/pixel/imdraw"
 )
 
 const(
@@ -54,7 +52,6 @@ func ValueClickHandler(value string) game.GuiEventHandler {
 func ValueStringProvider(value string) game.GuiStringProviderFunc {
 	return func() string{
 		valueNumber := game.Current.GetRewindedBranchStore().Values[value]
-		//valueNumber := game.Current.GetCurrentBranchStore().Values[value]
 		return fmt.Sprintf(value + ": %.2f", valueNumber)
 	}
 }
@@ -129,9 +126,6 @@ func NewBranchHandler() game.GuiEventHandler {
 
 func LoadData() *game.Data{
 	gameData := game.Data{}
-	// policies := game.Policies{}
-	// values := game.Values{}
-	// startValues := game.ValueMap{}
 	data, err := ioutil.ReadFile("data/policies.json")
 	if err != nil {
 		panic (err)
@@ -171,13 +165,7 @@ func run() {
 	// Load Data
 	fmt.Println("Loading data")
 	gameData := LoadData()
-
 	gameStarted := false
-
-	// Create Game object
-	//game.NewGame("time", gameData)
-
-	//gameStore := game.Current.GetGameStore()
 
 	// Create GUI
 	menu := game.GuiMenu{
