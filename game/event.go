@@ -36,9 +36,11 @@ func NextTurn() *NextTurnEvent{
 	gameStore := Current.GetGameStore()
 	lastID := Current.Dispatcher.Store.LastEvent.ID().IDPart()
 	e := NextTurnEvent{}
-	e.EventID = event.GenerateTimeID(store.Turn, lastID+1)
+	e.EventTime = uint64(time.Now().Unix())
+	e.EventID = event.GenerateTimeID(e.EventTime, lastID+1)
 	fmt.Println(fmt.Sprintf("Next event turn time is %d", store.Turn))
-	e.EventTime = store.Turn+1
+	e.BranchEventTime = store.Turn+1
+	
 	
 	fmt.Println(fmt.Sprintf("Current event turn time is %d", e.Time()))
 	e.BranchID = gameStore.CurrentBranch
@@ -68,9 +70,11 @@ func SetPolicy(policy string) *SetPolicyEvent {
 		Policy: policy,
 		State: state,
 	}
-	e.EventID = event.GenerateTimeID(store.Turn, lastID+1)
-	e.EventTime = store.Turn
+	e.EventTime = uint64(time.Now().Unix())
+	e.EventID = event.GenerateTimeID(e.EventTime, lastID+1)
+
 	e.BranchID = gameStore.CurrentBranch
+	e.BranchEventTime = store.Turn
 	return &e
 }
 
