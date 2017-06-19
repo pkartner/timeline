@@ -474,3 +474,96 @@ func drawRectangle(imd *imdraw.IMDraw, color pixel.RGBA, v pixel.Vec, b pixel.Ve
 	imd.Push(pos4)
 	imd.Polygon(0)
 }
+
+type SaveGameList struct {
+	Atlas *text.Atlas
+	OverwriteText *text.Text
+	FileLabels []*text.Text
+	FileNames []string
+	Exists []bool
+	OnMouseClick GuiEventHandler
+	Position pixel.Vec
+}
+
+type SaveGameClicked struct {
+	Remake bool
+	Filename string
+}
+
+func NewSaveGameList(vec pixel.Vec) *SaveGameList {
+	list := SaveGameList{}
+	list.Position = vec
+	list.Atlas = text.NewAtlas(
+		ttfFromBytesMust(goregular.TTF, 42),
+		text.ASCII, text.RangeTable(unicode.Latin),
+	)
+	list.OverwriteText = text.New(pixel.ZV, list.Atlas)
+	list.OverwriteText.Color = pixel.ToRGBA(colornames.Black)
+	_, err := list.OverwriteText.WriteString("Overwrite")
+	if err != nil {
+		panic(err)
+	}
+	return &list
+}
+
+func (list *SaveGameList) AddFile(filename string, exists bool) {
+	list.FileNames = append(list.FileNames, filename)
+	fileText := text.New(pixel.ZV, list.Atlas)
+	fileText.Color = pixel.ToRGBA(colornames.Black)
+	_, err := fileText.WriteString(filename)
+	if err != nil {
+		panic(err)
+	}
+	list.FileLabels = append(list.FileLabels, fileText)
+	list.Exists = append(list.Exists, exists)
+}
+
+func (g *SaveGameList) Draw(tar pixel.Target, vec pixel.Vec) {
+	vec = vec.Add(g.Position)
+	y := 0.0;
+	for k, _ := range g.FileNames {
+		position := vec.Add(pixel.V(0,y))
+		m := pixel.IM.Moved(position)
+		label := g.FileLabels[k]
+		label.Draw(tar, m)
+		if !g.Exists[k] {
+			y -= 32
+			continue
+		}
+		width := label.Bounds().W()
+
+		position = position.Add(pixel.V(width+20,0))
+		m = pixel.IM.Moved(position)
+		g.OverwriteText.Draw(tar, m)
+		y -= 32
+	}
+}
+
+func (g *SaveGameList) CheckMouse(key string, mousePosition pixel.Vec) bool {
+	mousePosition = mousePosition.Sub(g.Position)
+	y := 0.0;
+	for k, v := range g.FileLabels {
+		relMousePos := mousePosition.Sub(pixel.V(0,y))
+		dimension := pixel.V(v.Bounds().W(), v.Bounds().H())
+		if insideRect(relMousePos, dimension) {
+			filename := g.FileNames[k]
+			g.OnMouseClick(&SaveGameClicked{false, filename})
+			return true
+		}
+		if !g.Exists[k] {
+			y -= 32
+			continue
+		}
+		width := v.Bounds().W()
+		relMousePos = relMousePos.Sub(pixel.V(width+20,0))
+		bound := g.OverwriteText.Bounds()
+		dimension = pixel.V(bound.W(), bound.H())
+		if insideRect(relMousePos, dimension) {
+			filename := g.FileNames[k]
+			g.OnMouseClick(&SaveGameClicked{true, filename})
+			return true
+		}
+		y -= 32
+	}
+	return false
+}
