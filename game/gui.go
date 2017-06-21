@@ -75,7 +75,7 @@ func NewGuiPolicy(name string) *GuiPolicy {
 		Name: name,
 	}
 	regular := text.NewAtlas(
-		ttfFromBytesMust(goregular.TTF, 42),
+		ttfFromBytesMust(goregular.TTF, 20),
 		text.ASCII, text.RangeTable(unicode.Latin),
 	)
 	policy.NormalText = text.New(pixel.ZV, regular)
@@ -90,6 +90,8 @@ func NewGuiPolicy(name string) *GuiPolicy {
 	if err != nil {
 		panic(err)
 	}
+	bounds := policy.NormalText.Bounds()
+	policy.Dimension = pixel.V(bounds.W(), bounds.H())
 
 	return &policy
 }
@@ -155,7 +157,8 @@ func (g *GuiPolicyList) CheckMouse(key string, MousePosition pixel.Vec) bool {
 		if v.CheckMouse(key, position) {
 			return true
 		}
-		y -= 32
+		bounds := v.NormalText.Bounds()
+		y -= bounds.H() - 5
 	}
 	return false
 }
@@ -167,7 +170,8 @@ func (g *GuiPolicyList) Draw(t pixel.Target, relPos pixel.Vec) {
 		position := g.Position.Add(addedVector)
 		position = position.Add(relPos)
 		v.Draw(t, position)
-		y -= 32
+		bounds := v.NormalText.Bounds()
+		y -= bounds.H() - 5
 	}
 }
 
@@ -222,7 +226,7 @@ func NewGuiMenuItem(label string) *GuiMenuItem {
 		Label: label,
 	}
 	regular := text.NewAtlas(
-		ttfFromBytesMust(goregular.TTF, 42),
+		ttfFromBytesMust(goregular.TTF, 30),
 		text.ASCII, text.RangeTable(unicode.Latin),
 	)
 	item.Text = text.New(pixel.ZV, regular)
@@ -406,7 +410,7 @@ func (g *GuiTimeLine) Draw(tar pixel.Target, vec pixel.Vec) {
 			if v.BranchID == Current.GetGameStore().CurrentBranch && Current.GetRewindedBranchStore().Turn == i {
 				color = pixel.RGB(0,1,0)
 			}
-			x := 38.5 * float64(i)
+			x := 38.45 * float64(i)
 			nodePos := pixel.V(x, y)
 			nodePos = nodePos.Add(nodeStartPos)
 			nodePos = nodePos.Add(g.Position)
@@ -521,13 +525,14 @@ func (list *SaveGameList) AddFile(filename string, exists bool) {
 func (g *SaveGameList) Draw(tar pixel.Target, vec pixel.Vec) {
 	vec = vec.Add(g.Position)
 	y := 0.0;
-	for k, _ := range g.FileNames {
+	for k := range g.FileNames {
 		position := vec.Add(pixel.V(0,y))
 		m := pixel.IM.Moved(position)
 		label := g.FileLabels[k]
 		label.Draw(tar, m)
+		bounds := label.Bounds()
 		if !g.Exists[k] {
-			y -= 32
+			y -= bounds.H()+5
 			continue
 		}
 		width := label.Bounds().W()
@@ -535,7 +540,7 @@ func (g *SaveGameList) Draw(tar pixel.Target, vec pixel.Vec) {
 		position = position.Add(pixel.V(width+20,0))
 		m = pixel.IM.Moved(position)
 		g.OverwriteText.Draw(tar, m)
-		y -= 32
+		y -= bounds.H()+5
 	}
 }
 
@@ -550,8 +555,9 @@ func (g *SaveGameList) CheckMouse(key string, mousePosition pixel.Vec) bool {
 			g.OnMouseClick(&SaveGameClicked{false, filename})
 			return true
 		}
+		bounds := v.Bounds()
 		if !g.Exists[k] {
-			y -= 32
+			y -= bounds.H()+5
 			continue
 		}
 		width := v.Bounds().W()
@@ -563,7 +569,7 @@ func (g *SaveGameList) CheckMouse(key string, mousePosition pixel.Vec) bool {
 			g.OnMouseClick(&SaveGameClicked{true, filename})
 			return true
 		}
-		y -= 32
+		y -= bounds.H()+5
 	}
 	return false
 }

@@ -1,16 +1,64 @@
 {
     "policies": {
-        "increase_food":{
-            "name": "increase_food",
+        "rest":{
+            "name": "rest",
             "flat": [
                 {
-                    "value_name":"food",
+                    "value_name":"energy",
                     "amount":1.0
                 }
             ]
         },
-        "food_efficiency": {
-            "name": "food_efficiency"
+        "collect food": {
+            "name": "collect food",
+            "flat": [
+                {
+                    "value_name":"food",
+                    "amount":4.0
+                },
+                {
+                    "value_name":"energy",
+                    "amount": -1
+                }
+            ]
+        },
+        "collect resources": {
+            "name": "collect resources",
+            "flat": [
+                {
+                    "value_name":"resources",
+                    "amount":3.0
+                },
+                {
+                    "value_name":"energy",
+                    "amount": -1
+                }
+            ]
+        },
+        "build shelter": {
+            "name": "build shelter",
+            "flat": [
+                {
+                    "value_name":"resources",
+                    "amount":-1.0
+                },
+                {
+                    "value_name":"energy",
+                    "amount": -1
+                },
+                {
+                    "value_name":"shelter",
+                    "amount": 2.0
+                }
+            ]
         }
-    }
+    },
+    "mutual_exclusive": [
+        [
+            "rest",
+            "collect food",
+            "collect resources",
+            "build shelter"
+        ]
+    ]
 }

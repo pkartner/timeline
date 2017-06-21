@@ -169,50 +169,39 @@ func run() {
 
 	// Create GUI
 	menu := game.GuiMenu{
-		Position: pixel.Vec{X: 10, Y: 768-60},
+		Position: pixel.Vec{X: 10, Y: 768-30},
 		Bound: 20.0,
 	}
 
-	mainMenuItem := game.NewGuiMenuItem("Main")
-	policiesMenuItem := game.NewGuiMenuItem("Policies")
-	timelineMenuItem := game.NewGuiMenuItem("Timeline")
 	endTurnItem := game.NewGuiMenuItem("End Turn")
 	newBranchItem := game.NewGuiMenuItem("New Branch")
-	mainMenuItem.OnMouseClick = MenuButtonHandler("main")
-	policiesMenuItem.OnMouseClick = MenuButtonHandler("policies")
-	timelineMenuItem.OnMouseClick = MenuButtonHandler("timeline")
 	endTurnItem.OnMouseClick = EndturnHandler()
 	newBranchItem.OnMouseClick = NewBranchHandler()
 
-	menu.AddItem(mainMenuItem)
-	menu.AddItem(policiesMenuItem)
-	menu.AddItem(timelineMenuItem)
 	menu.AddItem(endTurnItem)
 	menu.AddItem(newBranchItem)
 
 	policyList := game.GuiPolicyList{
-		Position: pixel.Vec{X: 32, Y: 768-128},
+		Position: pixel.Vec{X: 500, Y: 768-64},
 	}
 	for _, v := range gameData.Policies.Policies {
 		guiPolicy := game.NewGuiPolicy(v.Name)
-		guiPolicy.Dimension = pixel.Vec{X: 600, Y: 32}
 		guiPolicy.OnMouseClick = PolicyClickHandler(v.Name)
 		policyList.AddPolicy(guiPolicy)
 	}
 	valueList := game.GuiPolicyList{
-		Position: pixel.Vec{X: 32, Y: 768-128},
+		Position: pixel.Vec{X: 32, Y: 768-64},
 	}
 	for _, v := range gameData.Values.Values {
 		guiValue := game.NewGuiPolicy(v.Name)
-		guiValue.Dimension = pixel.Vec{X: 600, Y: 32}
 		guiValue.OnMouseClick = ValueClickHandler(v.Name)
 		guiValue.StringProvider = ValueStringProvider(v.Name)
 		valueList.AddPolicy(guiValue)
 	}
-	guiTimeline := game.NewGuiTimeline(pixel.V(80, 768-128))
+	guiTimeline := game.NewGuiTimeline(pixel.V(80, 768-400))
 	guiTimeline.OnMouseClick = GotoBranch()
 
-	saveGameList := game.NewSaveGameList(pixel.Vec{X: 32, Y: 768-128})
+	saveGameList := game.NewSaveGameList(pixel.Vec{X: 350, Y: 768-250})
 	fileNameList := SaveGameFileNames()
 	for _, v := range fileNameList {
 		databaseFileName := v+".db"
@@ -225,22 +214,22 @@ func run() {
 	saveGameList.OnMouseClick = SaveGameListClickedHandler(&gameStarted, gameData)
 
 	mainScreen := game.GuiScreen{}
-	policyScreen := game.GuiScreen{}
-	timelineScreen := game.GuiScreen{}
 
-	policyScreen.AddDrawable(&policyList)
-	policyScreen.AddClickable(&policyList)
+	mainScreen.AddDrawable(&policyList)
+	mainScreen.AddClickable(&policyList)
 	mainScreen.AddDrawable(&valueList)
 	mainScreen.AddClickable(&valueList)
-	timelineScreen.AddDrawable(guiTimeline)
-	timelineScreen.AddClickable(guiTimeline)
+	mainScreen.AddDrawable(guiTimeline)
+	mainScreen.AddClickable(guiTimeline)
 
 	screens := map[string]*game.GuiScreen {
 		"main": &mainScreen,
-		"policies": &policyScreen,
-		"timeline": &timelineScreen,
 	}
 
+	goLeft := false
+	goLeftTimerExp := false
+	goRight := false
+	goRightTimerExp := false
 	for !win.Closed() {
 		win.Clear(colornames.White)
 		if gameStarted {
@@ -251,6 +240,42 @@ func run() {
 				screen.CheckMouse(game.LeftClick, mousePosition)
 				menu.CheckMouse(game.LeftClick, mousePosition)
 			}
+			timelineDeltaX := 0.0
+			if win.JustPressed(pixelgl.KeyA){
+				timer := time.NewTimer(time.Millisecond*400)
+				goLeftTimerExp = false
+				go func() {
+					<- timer.C
+					goLeftTimerExp = true
+				}()
+				goLeft = true
+				timelineDeltaX = -25.0
+			}
+			if win.JustPressed(pixelgl.KeyD) {
+				timer := time.NewTimer(time.Millisecond*400)
+				goRightTimerExp = false
+				go func() {
+					<- timer.C
+					goRightTimerExp = true
+				}()
+				goRight = true
+				timelineDeltaX = 25.0
+			}
+			if win.JustReleased(pixelgl.KeyA) {
+				goLeft = false
+			}
+			if win.JustReleased(pixelgl.KeyD) {
+				goRight = false
+			}
+
+			if goLeft && goLeftTimerExp {
+				timelineDeltaX = -8.0
+			}
+			if goRight && goRightTimerExp {
+				timelineDeltaX = 8.0
+			}
+
+			guiTimeline.Position.X += timelineDeltaX
 			
 			screen.Draw(win, pixel.ZV)
 			menu.Draw(win, pixel.ZV)
