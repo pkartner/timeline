@@ -16,6 +16,15 @@ var Current *Instance
 type Values struct {
 	Values map[string]struct {
 		Name string `json:"name"`
+		NaturalChange float64 `json:"natural_change"`
+		Min struct {
+			Set bool `json:"set"`
+			Value float64 `json:"value"`
+		} `json:"min"`
+		Max struct {
+			Set bool `json:"set"`
+			Value float64 `json:"value"`
+		} `json:"max"`
 		AffectedBy []struct{
 			Name string `json:"name"`
 			Weight float64 `json:"weight"`
@@ -37,6 +46,7 @@ type Policies struct {
 			Weight float64 `json:"weight"`
 		} `json:"weight_change"`
 	} `json:"policies"`
+	MutualExclusive [][]string `json:"mutual_exclusive"`
 }
 
 type Instance struct {
@@ -73,11 +83,21 @@ func CalculateWeightMap(policies Policies, values Values, activatedPolicies map[
 	return weightMap
 }
 
-func RecountValues(values ValueMap, weights WeightMap, policies Policies, activatedPolicies map[string]struct{}) ValueMap {
+func RecountValues(values ValueMap, valueData Values, weights WeightMap, policies Policies, activatedPolicies map[string]struct{}) ValueMap {
 	fmt.Println("Recounting values")
 	newValues := ValueMap{}
 	for k, v := range values {
-		newValues[k] = v + CalculateAddedValue(k, values, weights, policies, activatedPolicies)
+		value := valueData.Values[k]
+		newValue := v + CalculateAddedValue(k, values, weights, policies, activatedPolicies)
+		newValue += value.NaturalChange
+		if value.Min.Set && newValue < value.Min.Value {
+			newValue = value.Min.Value
+		}
+		if value.Max.Set && newValue > value.Max.Value {
+			newValue = value.Max.Value
+		}
+
+		newValues[k] = newValue
 	}
 	return newValues
 }

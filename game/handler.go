@@ -21,6 +21,26 @@ func (g *Instance) SetPolicyHandler(e event.Event, s *event.Store) {
 		delete(store.ActivePolicies, event.Policy)
 		return
 	}
+
+	for _, v := range Current.GameData.Policies.MutualExclusive {
+		present := false
+		for _, v2 :=  range v {
+			if v2 == event.Policy {
+				present = true
+				break
+			}
+		}
+
+		if !present {
+			continue
+		}
+
+		for _, v2 :=  range v {
+			if _, ok := store.ActivePolicies[v2]; ok {
+				delete(store.ActivePolicies, v2)
+			}
+		}
+	}
 	
 	store.ActivePolicies[event.Policy] = struct{}{}
 }
@@ -29,7 +49,7 @@ func (g *Instance) NextTurnHandler(e event.Event, s*event.Store) {
 	store := GetBranchStore(s)
 
 	store.Weights = CalculateWeightMap(g.GameData.Policies, g.GameData.Values, store.ActivePolicies)
-	store.Values = RecountValues(store.Values, store.Weights, g.GameData.Policies, store.ActivePolicies)
+	store.Values = RecountValues(store.Values, g.GameData.Values, store.Weights, g.GameData.Policies, store.ActivePolicies)
 
 	store.Turn++
 	fmt.Println(fmt.Sprintf("Beginning turn %d", store.Turn))
