@@ -1,0 +1,19 @@
+{
+    "start_values": {
+        "food": 8.0,
+        "health": 3.1,
+        "shelter": 0.0,
+        "resources": 0.0,
+        "energy": 6.0
+    },
+    "win_condition": {
+        "name": "turn",
+        "sign": "+",
+        "value": 30
+    },
+    "lose_condition": {
+        "name": "health",
+        "sign": "-",
+        "value": 0
+    }
+}

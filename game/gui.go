@@ -102,9 +102,7 @@ func (p *GuiPolicy) Draw(t pixel.Target, v pixel.Vec) {
 		p.NormalText.Clear()
 		p.NormalText.Dot = pixel.V(0, 0)
 		p.NormalText.WriteString(p.Name)
-		//p.StringProvider = nil
 	}
-	//store := Current.GetCurrentBranchStore()
 	store := Current.GetRewindedBranchStore()
 	m := pixel.IM.Moved(v)
 	_, ok := store.ActivePolicies[p.Name]
@@ -116,7 +114,6 @@ func (p *GuiPolicy) Draw(t pixel.Target, v pixel.Vec) {
 }
 
 func (p *GuiPolicy) CheckMouse(key string, MousePosition pixel.Vec) bool {
-	//fmt.Println("CheckMouse for policy: "+p.Name)
 	if p.OnMouseClick == nil {
 		return false
 	}
@@ -128,7 +125,6 @@ func (p *GuiPolicy) CheckMouse(key string, MousePosition pixel.Vec) bool {
 }
 
 func (p *GuiPolicy) Inside(pos pixel.Vec) bool {
-	//fmt.Println(fmt.Sprintf("MouseX: %.2f, MouseY: %.2f, Width: %.2f, Height: %.2f", pos.X, pos.Y, p.Dimension.X, p.Dimension.Y))
 	relativePos := pos.Sub(p.Position)
 	if 	relativePos.X >= 0 && 
 		relativePos.X <= p.Dimension.X &&
@@ -572,4 +568,32 @@ func (g *SaveGameList) CheckMouse(key string, mousePosition pixel.Vec) bool {
 		y -= bounds.H()+5
 	}
 	return false
+}
+
+type GuiBigText struct {
+	Label *text.Text
+	Position pixel.Vec
+}
+
+func NewGuiBigText(label string, position pixel.Vec) *GuiBigText {
+	bigText := GuiBigText{}
+	bigText.Position = position
+	
+	atlas := text.NewAtlas(
+		ttfFromBytesMust(goregular.TTF, 70),
+		text.ASCII, text.RangeTable(unicode.Latin),
+	)
+	bigText.Label = text.New(pixel.ZV, atlas)
+	bigText.Label.Color = pixel.ToRGBA(colornames.Black)
+	_, err :=bigText.Label.WriteString(label)
+	if err != nil {
+		panic(err)
+	}
+	return &bigText
+}
+
+func (t *GuiBigText) Draw(tar pixel.Target, vec pixel.Vec) {
+	position := t.Position.Add(vec)
+	m := pixel.IM.Moved(position)
+	t.Label.Draw(tar, m)	
 }

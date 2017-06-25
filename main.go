@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"time"
+	"sort"
 
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
@@ -140,11 +141,11 @@ func LoadData() *game.Data{
 	if err := json.Unmarshal(data, &gameData.Values); err != nil {
 		panic(err)
 	}
-	data, err = ioutil.ReadFile("data/startvalues.json")
+	data, err = ioutil.ReadFile("data/scenario.json")
 	if err != nil {
 		panic (err)
 	}
-	if err := json.Unmarshal(data, &gameData.Startvalues); err != nil {
+	if err := json.Unmarshal(data, &gameData.Scenario); err != nil {
 		panic(err)
 	}
 	
@@ -184,18 +185,30 @@ func run() {
 	policyList := game.GuiPolicyList{
 		Position: pixel.Vec{X: 500, Y: 768-64},
 	}
-	for _, v := range gameData.Policies.Policies {
-		guiPolicy := game.NewGuiPolicy(v.Name)
-		guiPolicy.OnMouseClick = PolicyClickHandler(v.Name)
+	policyNames := []string{}
+	for k := range gameData.Policies.Policies {
+		policyNames = append(policyNames, k)
+	}
+	sort.Strings(policyNames)
+	for _, v := range policyNames {
+		policy := gameData.Policies.Policies[v]
+		guiPolicy := game.NewGuiPolicy(policy.Name)
+		guiPolicy.OnMouseClick = PolicyClickHandler(policy.Name)
 		policyList.AddPolicy(guiPolicy)
 	}
 	valueList := game.GuiPolicyList{
 		Position: pixel.Vec{X: 32, Y: 768-64},
 	}
-	for _, v := range gameData.Values.Values {
-		guiValue := game.NewGuiPolicy(v.Name)
-		guiValue.OnMouseClick = ValueClickHandler(v.Name)
-		guiValue.StringProvider = ValueStringProvider(v.Name)
+	valueNames := []string{}
+	for k := range gameData.Values.Values {
+		valueNames = append(valueNames, k)
+	}
+	sort.Strings(valueNames)
+	for _, v := range valueNames {
+		value := gameData.Values.Values[v]
+		guiValue := game.NewGuiPolicy(value.Name)
+		guiValue.OnMouseClick = ValueClickHandler(value.Name)
+		guiValue.StringProvider = ValueStringProvider(value.Name)
 		valueList.AddPolicy(guiValue)
 	}
 	guiTimeline := game.NewGuiTimeline(pixel.V(80, 768-400))
@@ -213,7 +226,12 @@ func run() {
 	}
 	saveGameList.OnMouseClick = SaveGameListClickedHandler(&gameStarted, gameData)
 
+	winText := game.NewGuiBigText("You Won :)", pixel.V(350, 600))
+	loseText := game.NewGuiBigText("You Lost :(", pixel.V(350, 600))
+
 	mainScreen := game.GuiScreen{}
+	winScreen := game.GuiScreen{}
+	loseScreen := game.GuiScreen{}
 
 	mainScreen.AddDrawable(&policyList)
 	mainScreen.AddClickable(&policyList)
@@ -221,6 +239,16 @@ func run() {
 	mainScreen.AddClickable(&valueList)
 	mainScreen.AddDrawable(guiTimeline)
 	mainScreen.AddClickable(guiTimeline)
+	mainScreen.AddClickable(&menu)
+	mainScreen.AddDrawable(&menu)
+
+	winScreen.AddDrawable(guiTimeline)
+	winScreen.AddClickable(guiTimeline)
+	winScreen.AddDrawable(winText)
+
+	loseScreen.AddDrawable(guiTimeline)
+	loseScreen.AddClickable(guiTimeline)
+	loseScreen.AddDrawable(loseText)
 
 	screens := map[string]*game.GuiScreen {
 		"main": &mainScreen,
@@ -234,11 +262,17 @@ func run() {
 		win.Clear(colornames.White)
 		if gameStarted {
 			gameStore := game.Current.GetGameStore()
+			branchStore := game.Current.GetRewindedBranchStore()
 			screen := screens[gameStore.CurrentScreen]
+			if branchStore.GameOver == game.GameWon {
+				screen = &winScreen
+			}
+			if branchStore.GameOver == game.GameLost {
+				screen = &loseScreen
+			}
 			if win.JustPressed(pixelgl.MouseButtonLeft) {
 				mousePosition := win.MousePosition()
 				screen.CheckMouse(game.LeftClick, mousePosition)
-				menu.CheckMouse(game.LeftClick, mousePosition)
 			}
 			timelineDeltaX := 0.0
 			if win.JustPressed(pixelgl.KeyA){
@@ -278,7 +312,6 @@ func run() {
 			guiTimeline.Position.X += timelineDeltaX
 			
 			screen.Draw(win, pixel.ZV)
-			menu.Draw(win, pixel.ZV)
 		} else {
 			if win.JustPressed(pixelgl.MouseButtonLeft) {
 				mousePosition := win.MousePosition()
