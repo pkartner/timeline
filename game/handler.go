@@ -48,10 +48,13 @@ func (g *Instance) SetPolicyHandler(e event.Event, s *event.Store) {
 func (g *Instance) NextTurnHandler(e event.Event, s*event.Store) {
 	store := GetBranchStore(s)
 
+	store.ActivePolicies = ReEvaluatePolicies(store.ActivePolicies, g.GameData.Policies, store.Values)
 	store.Weights = CalculateWeightMap(g.GameData.Policies, g.GameData.Values, store.ActivePolicies)
 	store.Values = RecountValues(store.Values, g.GameData.Values, store.Weights, g.GameData.Policies, store.ActivePolicies)
-
 	store.Turn++
+	if store.GameOver == 0 {
+		store.GameOver = EvaluateGameEndConditions(store.Turn, &g.GameData.Scenario, store.Values)
+	}
 	fmt.Println(fmt.Sprintf("Beginning turn %d", store.Turn))
 }
 

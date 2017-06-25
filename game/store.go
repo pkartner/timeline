@@ -6,6 +6,9 @@ import (
 	"github.com/pkartner/event"
 )
 
+const GameWon uint8 = 1
+const GameLost uint8 = 2
+
 type GameStore struct {
 	CurrentBranch event.ID
 	LastEventID uint64
@@ -18,6 +21,7 @@ type BranchStore struct {
 	BranchID event.ID
 	Values ValueMap
 	Weights WeightMap
+	GameOver uint8
 	ActivePolicies map[string]struct{}
 	Turn uint64
 }
