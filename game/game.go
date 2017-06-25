@@ -9,25 +9,32 @@ import (
 )
 
 type ValueMap map[string]float64
-type WeightMap map[string]map[string]float64
+type WeightMap map[string]map[string]Weight
 
 var Current *Instance
+
+type MaxMin struct {
+	Set bool `json:"set"`
+	Value float64 `json:"value"`
+}
+
+type Weight struct {
+	Multiplier float64
+	Max MaxMin
+	Min MaxMin
+}
 
 type Values struct {
 	Values map[string]struct {
 		Name string `json:"name"`
 		NaturalChange float64 `json:"natural_change"`
-		Min struct {
-			Set bool `json:"set"`
-			Value float64 `json:"value"`
-		} `json:"min"`
-		Max struct {
-			Set bool `json:"set"`
-			Value float64 `json:"value"`
-		} `json:"max"`
+		Min MaxMin `json:"min"`
+		Max MaxMin `json:"max"`
 		AffectedBy []struct{
 			Name string `json:"name"`
 			Weight float64 `json:"weight"`
+			Min MaxMin `json:"min"`
+			Max MaxMin `json:"max"`
 		} `json:"affected_by"`
 	} `json:"values"`
 
@@ -41,12 +48,28 @@ type Policies struct {
 			Amount float64 `json:"amount"`
 		} `json:"flat"`
 		WeightChange []struct {
-			DestValueName string `json:"dest_value_name"`
-			SourceValueName string `json:"source_value_name"`
+			DestValueName string `json:"dest"`
+			SourceValueName string `json:"source"`
 			Weight float64 `json:"weight"`
 		} `json:"weight_change"`
+		Restrictions []struct {
+			ValueName string `json:"value_name"`
+			Amount float64 `json:"amount"`
+		}
 	} `json:"policies"`
 	MutualExclusive [][]string `json:"mutual_exclusive"`
+}
+
+type GameEndCondition struct {
+	Name string `json:"name"`
+	Sign string `json:"sign"`
+	Value float64 `json:"value"`
+}
+
+type Scenario struct {
+	StartValues ValueMap `json:"start_values"`
+	WinCondition *GameEndCondition `json:"win_condition"`
+	LoseCondition *GameEndCondition `json:"lose_condition"`
 }
 
 type Instance struct {
@@ -58,7 +81,7 @@ type Instance struct {
 type Data struct {
 	Values Values
 	Policies Policies
-	Startvalues ValueMap
+	Scenario Scenario
 }
 
 func (g *Instance) Restore() {
@@ -68,19 +91,76 @@ func (g *Instance) Restore() {
 func CalculateWeightMap(policies Policies, values Values, activatedPolicies map[string]struct{}) WeightMap {
 	weightMap := WeightMap{}
 	for k, v := range values.Values {
-		weightMap[k] = map[string]float64{}
+		weightMap[k] = map[string]Weight{}
 		for _, v2 := range v.AffectedBy {
-			weightMap[k][v2.Name] = v2.Weight
+			weight := Weight{
+				Multiplier: v2.Weight,
+			}
+			weight.Max = v2.Max
+			weight.Min = v2.Min
+			weightMap[k][v2.Name] = weight
 		}
 	}
 	for k := range activatedPolicies {
 		for _, v := range policies.Policies[k].WeightChange {
 			value := weightMap[v.DestValueName][v.SourceValueName]
-			weightMap[v.DestValueName][v.SourceValueName] = value + v.Weight
+			value.Multiplier = value.Multiplier + v.Weight
+			weightMap[v.DestValueName][v.SourceValueName] = value
 		}
 	}
 
 	return weightMap
+}
+
+func ReEvaluatePolicies(activePolicies map[string]struct{}, policies Policies, values ValueMap) map[string]struct{} {
+	removePolicies := []string{}
+	for k := range activePolicies {
+		policy := policies.Policies[k]
+		for _, v := range policy.Restrictions {
+			if values[v.ValueName] < v.Amount {
+				removePolicies = append(removePolicies, k)
+			}
+		}
+	}
+	newPolicies := map[string]struct{}{}
+	for k, v := range activePolicies {
+  		newPolicies[k] = v
+	}
+	for _, v := range removePolicies {
+		delete(newPolicies, v)
+	}
+	
+	return newPolicies
+}
+
+func EvaluateGameEndConditions(turn uint64, scenario *Scenario, values ValueMap) uint8 {
+	if EvaluateGameEndCondition(turn, scenario.WinCondition, values) {
+		return GameWon
+	}
+	if EvaluateGameEndCondition(turn, scenario.LoseCondition, values) {
+		return GameLost
+	}
+	return 0
+}
+
+func EvaluateGameEndCondition(turn uint64, endCondition *GameEndCondition, values ValueMap) bool {
+	var value float64
+	if endCondition.Name == "turn" {
+		value = float64(turn)
+	} else {
+		var ok bool
+		value, ok = values[endCondition.Name]
+		if !ok {
+			panic("Value doesn't exist")
+		}
+	}
+	if endCondition.Sign == "+" && value >= endCondition.Value{
+		return true
+	}
+	if endCondition.Sign == "-" && value <= endCondition.Value{
+		return true
+	}
+	return false
 }
 
 func RecountValues(values ValueMap, valueData Values, weights WeightMap, policies Policies, activatedPolicies map[string]struct{}) ValueMap {
@@ -108,7 +188,14 @@ func CalculateAddedValue(key string, values ValueMap, weights WeightMap, policie
 	weightsForValue := weights[key]
 	adjustment := 0.0
 	for k, v := range weightsForValue {
-		adjustment += values[k] * v
+		weightAdjustment := values[k] * v.Multiplier
+		if v.Max.Set && weightAdjustment > v.Max.Value {
+			weightAdjustment = v.Max.Value
+		}
+		if v.Min.Set && weightAdjustment < v.Min.Value {
+			weightAdjustment = v.Min.Value
+		}
+		adjustment += weightAdjustment
 	}
 	for k := range activatedPolicies {
 		for _, v := range policies.Policies[k].FlatAmountPerTurn {
@@ -129,7 +216,7 @@ func NewGame(fileName string, GameData *Data) {
         panic(err)
     }
     eventStore := event.NewBoltEventStore(db)
-    timeStore := event.NewTimelineStore(NewBranchStoreFunc(GameData.Startvalues), event.Reloader{
+    timeStore := event.NewTimelineStore(NewBranchStoreFunc(GameData.Scenario.StartValues), event.Reloader{
         EventStore: eventStore,
     }, nil)
 	timeStore.Attributes = &GameStore{}
