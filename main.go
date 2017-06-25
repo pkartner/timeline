@@ -63,7 +63,8 @@ func SaveGameListClickedHandler(gameStarted *bool, gameData *game.Data) game.Gui
 		if !ok {
 			panic("Interface not of type SaveGameClicked")
 		}
-		databaseFileName := gameClicked.Filename+".db"
+		dir := "save"
+		databaseFileName := dir+"/"+gameClicked.Filename+".db"
 		if gameClicked.Remake {
 			if _, err := os.Stat(databaseFileName); !os.IsNotExist(err) {
 				if err := os.Remove(databaseFileName); nil != err {
@@ -75,7 +76,8 @@ func SaveGameListClickedHandler(gameStarted *bool, gameData *game.Data) game.Gui
 		if _, err := os.Stat(databaseFileName); os.IsNotExist(err) {
 			newGame = true
 		}
-		game.NewGame(gameClicked.Filename, gameData)
+		os.Mkdir(dir, os.ModePerm)
+		game.NewGame(dir+"/"+gameClicked.Filename, gameData)
 		if newGame {
 			game.Current.Dispatcher.Dispatch(event.NewBranch(0, event.ZeroID(), event.ZeroID(), uint64(time.Now().Unix()), 0))
 			branchID := game.Current.GetTimeLineStore().Branches[0].BranchID
@@ -217,7 +219,7 @@ func run() {
 	saveGameList := game.NewSaveGameList(pixel.Vec{X: 350, Y: 768-250})
 	fileNameList := SaveGameFileNames()
 	for _, v := range fileNameList {
-		databaseFileName := v+".db"
+		databaseFileName := "save/"+v+".db"
 		fileExists := false
 		if _, err := os.Stat(databaseFileName); !os.IsNotExist(err) {
 			fileExists = true
